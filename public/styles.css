@@ -1,0 +1,157 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --primary: #0a3a6a;
+  --border: #d7dce2;
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --accent: #0f62a5;
+  --danger-bg: #ffeaea;
+  --danger-text: #a31212;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: #111827;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+header {
+  margin-bottom: 1.5rem;
+}
+
+h1 {
+  margin-bottom: 0.4rem;
+}
+
+p {
+  margin-top: 0;
+  color: #4b5563;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  margin-bottom: 1.5rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  gap: 0.4rem;
+  color: #1f2937;
+}
+
+input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+}
+
+.actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #f9fafb;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button.primary {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.alert {
+  border: 1px solid #f5a7a7;
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+#tips ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #374151;
+}
+
+.report-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.report table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.report th,
+.report td {
+  border: 1px solid #1f2937;
+  padding: 0.45rem 0.6rem;
+  text-align: center;
+}
+
+.report th {
+  background: var(--primary);
+  color: #fff;
+}
+
+.report td.label {
+  text-align: right;
+  font-weight: 600;
+}
+
+.report td.empty {
+  text-align: center;
+  font-style: italic;
+}
+
+.report tfoot td {
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .report th,
+  .report td {
+    font-size: 0.85rem;
+  }
+}

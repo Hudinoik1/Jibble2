@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jibble Daily Work Report</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>Jibble Daily Work Report</h1>
+        <p>
+          Enter your Jibble API Key ID + Secret, choose a date, and generate daily work
+          reports for every person.
+        </p>
+      </header>
+
+      <section class="card">
+        <div class="alert" id="error" role="alert" hidden></div>
+        <form id="report-form">
+          <div class="grid">
+            <label>
+              API Key ID
+              <input
+                type="text"
+                name="apiKeyId"
+                placeholder="Paste your API Key ID"
+                autocomplete="off"
+                required
+              />
+            </label>
+            <label>
+              API Key Secret
+              <input
+                type="password"
+                name="apiKeySecret"
+                placeholder="Paste your API Key Secret"
+                autocomplete="off"
+                required
+              />
+            </label>
+            <label>
+              Base API URL (optional)
+              <input
+                type="url"
+                name="baseUrl"
+                value="https://api.jibble.io/v2"
+                autocomplete="off"
+              />
+            </label>
+            <label>
+              Date
+              <input type="date" name="date" required />
+            </label>
+            <label>
+              Shift hours (for balance)
+              <input type="number" name="shiftHours" min="1" step="0.5" value="8" />
+            </label>
+          </div>
+          <div class="actions">
+            <button type="submit" class="primary">Generate report</button>
+            <button type="button" id="clear-button">Clear</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" id="tips">
+        <h2>Tips for a clean connection</h2>
+        <ul>
+          <li>
+            Jibble uses both a <strong>Key ID</strong> and a <strong>Secret</strong>.
+            This app sends them together using Basic Auth (ID:Secret).
+          </li>
+          <li>
+            If your Jibble region uses a different base URL, update the Base API URL
+            field. The app will also try both <code>/v1</code> and <code>/v2</code>
+            automatically.
+          </li>
+          <li>
+            Make sure the selected date matches the timezone configured in Jibble for
+            consistent totals.
+          </li>
+        </ul>
+      </section>
+
+      <section id="results"></section>
+    </main>
+
+    <template id="person-template">
+      <article class="report card">
+        <header class="report-header">
+          <h2></h2>
+          <span class="report-date"></span>
+        </header>
+        <table>
+          <thead>
+            <tr>
+              <th>Property</th>
+              <th>Time In</th>
+              <th>Time Out</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody class="report-body"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" class="label">Total Worked:</td>
+              <td class="total-worked"></td>
+            </tr>
+            <tr>
+              <td colspan="3" class="label">Balance (shift - total):</td>
+              <td class="balance"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </article>
+    </template>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

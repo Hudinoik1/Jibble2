@@ -1,0 +1,32 @@
+# Jibble Daily Work Report
+
+This app renders daily work reports for each person in your Jibble account. It asks for the
+Jibble **API Key ID** and **API Key Secret**, then fetches people and time entries for the
+selected date.
+
+## Running locally
+
+```bash
+npm install
+npm start
+```
+
+Visit `http://localhost:3000`.
+
+## Render deployment
+
+Create a new **Web Service** on Render, then use:
+
+- **Build Command:** `npm install`
+- **Start Command:** `npm start`
+
+The service uses the `PORT` environment variable automatically.
+
+## Notes
+
+- If your Jibble region uses a different base URL, edit the Base API URL field (the
+  service also tries both `/v1` and `/v2` automatically).
+- The app tries multiple auth styles (Basic with ID:Secret, Bearer Secret, and API key
+  headers) to reduce connection errors.
+- Reports group time entries by location/project/activity and calculate total and balance
+  (default 8-hour shift).
