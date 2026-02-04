@@ -27,7 +27,8 @@ The service uses the `PORT` environment variable automatically.
 The backend intentionally tries multiple options to avoid API errors:
 
 - Base URL candidates include `/v1`, `/v2`, `/api/v1`, and `/api/v2` variants.
-- Authentication can be tried with Basic (ID:Secret), Bearer (Secret), or API key headers.
+- Authentication can be tried with Basic (ID:Secret), Token/Bearer/ApiKey, or API key
+  header variants.
 - Requests retry on transient failures and respect a configurable timeout.
 
 ## Notes

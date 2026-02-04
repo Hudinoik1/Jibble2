@@ -61,9 +61,19 @@ const buildAuthStrategies = (mode, id, secret) => {
       headers: { Authorization: `Basic ${token}` },
     },
     {
+      key: "token",
+      label: "Token (Secret)",
+      headers: { Authorization: `Token ${secret}` },
+    },
+    {
       key: "bearer",
       label: "Bearer (Secret)",
       headers: { Authorization: `Bearer ${secret}` },
+    },
+    {
+      key: "api-key-auth",
+      label: "ApiKey (Secret)",
+      headers: { Authorization: `ApiKey ${secret}` },
     },
     {
       key: "api-key",
@@ -74,6 +84,11 @@ const buildAuthStrategies = (mode, id, secret) => {
       key: "api-key-id",
       label: "X-API-KEY + X-API-SECRET",
       headers: { "X-API-KEY": id, "X-API-SECRET": secret },
+    },
+    {
+      key: "api-key-id-alt",
+      label: "X-API-KEY-ID + X-API-KEY-SECRET",
+      headers: { "X-API-KEY-ID": id, "X-API-KEY-SECRET": secret },
     },
   ];
 
