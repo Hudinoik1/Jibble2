@@ -10,6 +10,8 @@ const showError = (message, details) => {
     parts.push(details);
   }
   errorBox.textContent = parts.filter(Boolean).join(" ");
+const showError = (message) => {
+  errorBox.textContent = message;
   errorBox.hidden = false;
 };
 
@@ -91,6 +93,7 @@ form.addEventListener("submit", async (event) => {
         details.push(`Tried: ${data.triedBaseUrls.join(", ")}`);
       }
       showError(data.message || "Unable to fetch data from Jibble.", details.join(" "));
+      showError(data.message || "Unable to fetch data from Jibble.");
       return;
     }
 

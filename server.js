@@ -53,6 +53,14 @@ const sanitizeErrorMessage = (value) => {
   }
   const withoutTags = value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   return withoutTags.slice(0, 280);
+    return "https://api.jibble.io/v2";
+  }
+  return value.replace(/\/$/, "");
+};
+
+const buildAuthHeader = (id, secret) => {
+  const token = Buffer.from(`${id}:${secret}`).toString("base64");
+  return `Basic ${token}`;
 };
 
 const fetchJson = async (url, options) => {
@@ -67,6 +75,7 @@ const fetchJson = async (url, options) => {
   if (!response.ok) {
     const rawMessage = json?.message || json?.error || text || response.statusText;
     const message = sanitizeErrorMessage(rawMessage);
+    const message = json?.message || json?.error || text || response.statusText;
     const err = new Error(message);
     err.status = response.status;
     err.body = json;
@@ -93,6 +102,7 @@ const extractArray = (payload) => {
 };
 
 const tryEndpoints = async ({ baseUrl, authHeaders, endpoints, params = {} }) => {
+const tryEndpoints = async ({ baseUrl, authHeader, endpoints, params = {} }) => {
   const query = new URLSearchParams(params);
   let lastError = null;
   for (const endpoint of endpoints) {
@@ -113,6 +123,20 @@ const tryEndpoints = async ({ baseUrl, authHeaders, endpoints, params = {} }) =>
         }
         throw error;
       }
+    try {
+      const json = await fetchJson(url, {
+        headers: {
+          Authorization: authHeader,
+          Accept: "application/json",
+        },
+      });
+      return { endpoint, json };
+    } catch (error) {
+      if (error.status && error.status < 500) {
+        lastError = error;
+        continue;
+      }
+      throw error;
     }
   }
   throw lastError || new Error("Unable to fetch data from Jibble.");
@@ -246,6 +270,8 @@ app.post("/api/report", async (req, res) => {
 
     const baseUrlCandidates = buildBaseUrlCandidates(baseUrl);
     const authHeaders = buildAuthHeaders(apiKeyId, apiKeySecret);
+    const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+    const authHeader = buildAuthHeader(apiKeyId, apiKeySecret);
     const shiftMinutes =
       Number.isFinite(Number(shiftHours)) && Number(shiftHours) > 0
         ? Math.round(Number(shiftHours) * 60)
@@ -279,6 +305,11 @@ app.post("/api/report", async (req, res) => {
       });
     }
 
+    const peopleResult = await tryEndpoints({
+      baseUrl: normalizedBaseUrl,
+      authHeader,
+      endpoints: ["/people", "/persons", "/users"],
+    });
     const people = extractArray(peopleResult.json);
 
     const startDate = date;
@@ -296,6 +327,8 @@ app.post("/api/report", async (req, res) => {
         const timeResult = await tryEndpoints({
           baseUrl: resolvedBaseUrl,
           authHeaders,
+          baseUrl: normalizedBaseUrl,
+          authHeader,
           endpoints: ["/time_entries", "/timesheets", "/time-entries"],
           params: {
             person_id: personId,
@@ -316,6 +349,7 @@ app.post("/api/report", async (req, res) => {
     return res.json({
       date,
       baseUrl: resolvedBaseUrl,
+      baseUrl: normalizedBaseUrl,
       peopleCount: reports.length,
       reports,
     });
