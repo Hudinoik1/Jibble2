@@ -24,10 +24,6 @@ The service uses the `PORT` environment variable automatically.
 
 ## Notes
 
-- If your Jibble region uses a different base URL, edit the Base API URL field (the
-  service also tries both `/v1` and `/v2` automatically).
-- The app tries multiple auth styles (Basic with ID:Secret, Bearer Secret, and API key
-  headers) to reduce connection errors.
 - If your Jibble region uses a different base URL, edit the Base API URL field.
 - The app sends credentials using Basic Auth as `API Key ID:API Key Secret`.
 - Reports group time entries by location/project/activity and calculate total and balance
