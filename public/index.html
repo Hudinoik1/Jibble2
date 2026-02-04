@@ -22,21 +22,21 @@
         <form id="report-form">
           <div class="grid">
             <label>
-              API Key ID
+              Client ID
               <input
                 type="text"
                 name="apiKeyId"
-                placeholder="Paste your API Key ID"
+                placeholder="Paste your Client ID"
                 autocomplete="off"
                 required
               />
             </label>
             <label>
-              API Key Secret
+              Client Secret
               <input
                 type="password"
                 name="apiKeySecret"
-                placeholder="Paste your API Key Secret"
+                placeholder="Paste your Client Secret"
                 autocomplete="off"
                 required
               />
@@ -59,19 +59,6 @@
               <input type="number" name="shiftHours" min="1" step="0.5" value="8" />
             </label>
             <label>
-              Auth mode
-              <select name="authMode">
-                <option value="auto" selected>Auto (try all)</option>
-                <option value="basic">Basic (ID:Secret)</option>
-                <option value="token">Token (Secret)</option>
-                <option value="bearer">Bearer (Secret)</option>
-                <option value="api-key-auth">ApiKey (Secret)</option>
-                <option value="api-key">X-API-KEY (Secret)</option>
-                <option value="api-key-id">X-API-KEY + X-API-SECRET</option>
-                <option value="api-key-id-alt">X-API-KEY-ID + X-API-KEY-SECRET</option>
-              </select>
-            </label>
-            <label>
               Timeout (ms)
               <input type="number" name="timeoutMs" min="2000" step="500" value="12000" />
             </label>
@@ -87,8 +74,8 @@
         <h2>Tips for a clean connection</h2>
         <ul>
           <li>
-            Jibble uses both a <strong>Key ID</strong> and a <strong>Secret</strong>.
-            This app can try multiple auth styles if Auto is selected.
+            Jibble requires an OAuth <strong>Client ID</strong> and <strong>Client Secret</strong>
+            to request a bearer access token.
           </li>
           <li>
             If your Jibble region uses a different base URL, update the Base API URL

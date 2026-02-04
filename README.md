@@ -1,7 +1,7 @@
 # Jibble Daily Work Report
 
 This app renders daily work reports for each person in your Jibble account. It asks for the
-Jibble **API Key ID** and **API Key Secret**, then fetches people and time entries for the
+Jibble **Client ID** and **Client Secret**, then fetches people and time entries for the
 selected date.
 
 ## Running locally
@@ -27,12 +27,12 @@ The service uses the `PORT` environment variable automatically.
 The backend intentionally tries multiple options to avoid API errors:
 
 - Base URL candidates include `/v1`, `/v2`, `/api/v1`, and `/api/v2` variants.
-- Authentication can be tried with Basic (ID:Secret), Token/Bearer/ApiKey, or API key
-  header variants.
-- Requests retry on transient failures and respect a configurable timeout.
+- OAuth access token retrieval uses the Jibble identity endpoint and retries on transient failures.
+- Requests respect a configurable timeout.
 
 ## Notes
 
+- Use the **Client ID** and **Client Secret** from Jibble (OAuth client credentials flow).
 - If your Jibble region uses a different base URL, edit the Base API URL field.
 - Reports group time entries by location/project/activity and calculate total and balance
   (default 8-hour shift).

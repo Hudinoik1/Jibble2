@@ -10,6 +10,13 @@ app.use(express.static(path.join(__dirname, "public")));
 const DEFAULT_SHIFT_HOURS = 8;
 const DEFAULT_TIMEOUT_MS = 12000;
 const DEFAULT_RETRIES = 2;
+const OAUTH_TOKEN_URL = "https://identity.prod.jibble.io/connect/token";
+const TOKEN_SKEW_MS = 60000;
+
+let tokenCache = {
+  accessToken: null,
+  expiresAt: 0,
+};
 
 const normalizeBaseUrl = (value) => {
   if (!value) {
@@ -52,53 +59,13 @@ const buildBaseUrlCandidates = (value) => {
   return Array.from(candidates).filter(Boolean);
 };
 
-const buildAuthStrategies = (mode, id, secret) => {
-  const token = Buffer.from(`${id}:${secret}`).toString("base64");
-  const strategies = [
-    {
-      key: "basic",
-      label: "Basic (ID:Secret)",
-      headers: { Authorization: `Basic ${token}` },
-    },
-    {
-      key: "token",
-      label: "Token (Secret)",
-      headers: { Authorization: `Token ${secret}` },
-    },
-    {
-      key: "bearer",
-      label: "Bearer (Secret)",
-      headers: { Authorization: `Bearer ${secret}` },
-    },
-    {
-      key: "api-key-auth",
-      label: "ApiKey (Secret)",
-      headers: { Authorization: `ApiKey ${secret}` },
-    },
-    {
-      key: "api-key",
-      label: "X-API-KEY (Secret)",
-      headers: { "X-API-KEY": secret },
-    },
-    {
-      key: "api-key-id",
-      label: "X-API-KEY + X-API-SECRET",
-      headers: { "X-API-KEY": id, "X-API-SECRET": secret },
-    },
-    {
-      key: "api-key-id-alt",
-      label: "X-API-KEY-ID + X-API-KEY-SECRET",
-      headers: { "X-API-KEY-ID": id, "X-API-KEY-SECRET": secret },
-    },
-  ];
-
-  if (!mode || mode === "auto") {
-    return strategies;
-  }
-
-  const selected = strategies.find((strategy) => strategy.key === mode);
-  return selected ? [selected] : strategies;
-};
+const buildAuthStrategies = (accessToken) => [
+  {
+    key: "bearer",
+    label: "Bearer (OAuth access token)",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  },
+];
 
 const sanitizeErrorMessage = (value) => {
   if (!value) {
@@ -159,6 +126,45 @@ const fetchJson = async (url, options, retries, timeoutMs) => {
     }
   }
   throw lastError;
+};
+
+const fetchAccessToken = async ({ clientId, clientSecret, retries, timeoutMs }) => {
+  const now = Date.now();
+  if (tokenCache.accessToken && tokenCache.expiresAt - TOKEN_SKEW_MS > now) {
+    return tokenCache.accessToken;
+  }
+
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: clientId,
+    client_secret: clientSecret,
+  });
+
+  const payload = await fetchJson(
+    OAUTH_TOKEN_URL,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    },
+    retries,
+    timeoutMs
+  );
+
+  if (!payload?.access_token) {
+    throw new Error("Missing access token in Jibble response.");
+  }
+
+  const expiresInMs = Number(payload.expires_in || 0) * 1000;
+  tokenCache = {
+    accessToken: payload.access_token,
+    expiresAt: expiresInMs ? now + expiresInMs : now + 60 * 60 * 1000,
+  };
+
+  return payload.access_token;
 };
 
 const extractArray = (payload) => {
@@ -344,7 +350,6 @@ app.post("/api/report", async (req, res) => {
       baseUrl,
       date,
       shiftHours,
-      authMode,
       timeoutMs,
     } = req.body || {};
 
@@ -359,7 +364,6 @@ app.post("/api/report", async (req, res) => {
     }
 
     const baseUrlCandidates = buildBaseUrlCandidates(baseUrl);
-    const authStrategies = buildAuthStrategies(authMode, apiKeyId, apiKeySecret);
     const shiftMinutes =
       Number.isFinite(Number(shiftHours)) && Number(shiftHours) > 0
         ? Math.round(Number(shiftHours) * 60)
@@ -375,6 +379,14 @@ app.post("/api/report", async (req, res) => {
     let resolvedAuth;
     let resolvedPeopleEndpoint;
     let baseUrlError;
+
+    const accessToken = await fetchAccessToken({
+      clientId: apiKeyId,
+      clientSecret: apiKeySecret,
+      retries,
+      timeoutMs: timeout,
+    });
+    const authStrategies = buildAuthStrategies(accessToken);
 
     for (const candidate of baseUrlCandidates) {
       try {
