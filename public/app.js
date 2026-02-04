@@ -4,6 +4,12 @@ const errorBox = document.getElementById("error");
 const clearButton = document.getElementById("clear-button");
 const template = document.getElementById("person-template");
 
+const showError = (message, details) => {
+  const parts = [message];
+  if (details) {
+    parts.push(details);
+  }
+  errorBox.textContent = parts.filter(Boolean).join(" ");
 const showError = (message) => {
   errorBox.textContent = message;
   errorBox.hidden = false;
@@ -79,6 +85,14 @@ form.addEventListener("submit", async (event) => {
     });
     const data = await response.json();
     if (!response.ok) {
+      const details = [];
+      if (data.details) {
+        details.push(`Details: ${data.details}`);
+      }
+      if (Array.isArray(data.triedBaseUrls)) {
+        details.push(`Tried: ${data.triedBaseUrls.join(", ")}`);
+      }
+      showError(data.message || "Unable to fetch data from Jibble.", details.join(" "));
       showError(data.message || "Unable to fetch data from Jibble.");
       return;
     }

@@ -11,6 +11,48 @@ const DEFAULT_SHIFT_HOURS = 8;
 
 const normalizeBaseUrl = (value) => {
   if (!value) {
+    return "https://api.jibble.io";
+  }
+  let normalized = value.trim();
+  if (!/^https?:\/\//i.test(normalized)) {
+    normalized = `https://${normalized}`;
+  }
+  return normalized.replace(/\/$/, "");
+};
+
+const buildBaseUrlCandidates = (value) => {
+  const normalized = normalizeBaseUrl(value);
+  const candidates = new Set([
+    normalized,
+    "https://api.jibble.io",
+    "https://api.jibble.io/v2",
+    "https://api.jibble.io/v1",
+  ]);
+  if (normalized.endsWith("/v1") || normalized.endsWith("/v2")) {
+    candidates.add(normalized.replace(/\/(v1|v2)$/i, ""));
+  } else {
+    candidates.add(`${normalized}/v2`);
+    candidates.add(`${normalized}/v1`);
+  }
+  return Array.from(candidates);
+};
+
+const buildAuthHeaders = (id, secret) => {
+  const token = Buffer.from(`${id}:${secret}`).toString("base64");
+  return [
+    { Authorization: `Basic ${token}` },
+    { Authorization: `Bearer ${secret}` },
+    { "X-API-KEY": secret },
+    { "X-API-KEY": id, "X-API-SECRET": secret },
+  ];
+};
+
+const sanitizeErrorMessage = (value) => {
+  if (!value) {
+    return "";
+  }
+  const withoutTags = value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return withoutTags.slice(0, 280);
     return "https://api.jibble.io/v2";
   }
   return value.replace(/\/$/, "");
@@ -31,6 +73,8 @@ const fetchJson = async (url, options) => {
     json = null;
   }
   if (!response.ok) {
+    const rawMessage = json?.message || json?.error || text || response.statusText;
+    const message = sanitizeErrorMessage(rawMessage);
     const message = json?.message || json?.error || text || response.statusText;
     const err = new Error(message);
     err.status = response.status;
@@ -57,11 +101,28 @@ const extractArray = (payload) => {
   );
 };
 
+const tryEndpoints = async ({ baseUrl, authHeaders, endpoints, params = {} }) => {
 const tryEndpoints = async ({ baseUrl, authHeader, endpoints, params = {} }) => {
   const query = new URLSearchParams(params);
   let lastError = null;
   for (const endpoint of endpoints) {
     const url = `${baseUrl}${endpoint}${query.toString() ? `?${query}` : ""}`;
+    for (const headers of authHeaders) {
+      try {
+        const json = await fetchJson(url, {
+          headers: {
+            ...headers,
+            Accept: "application/json",
+          },
+        });
+        return { endpoint, json };
+      } catch (error) {
+        if (error.status && error.status < 500) {
+          lastError = error;
+          continue;
+        }
+        throw error;
+      }
     try {
       const json = await fetchJson(url, {
         headers: {
@@ -207,12 +268,42 @@ app.post("/api/report", async (req, res) => {
       return res.status(400).json({ message: "Please pick a date to run the report." });
     }
 
+    const baseUrlCandidates = buildBaseUrlCandidates(baseUrl);
+    const authHeaders = buildAuthHeaders(apiKeyId, apiKeySecret);
     const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
     const authHeader = buildAuthHeader(apiKeyId, apiKeySecret);
     const shiftMinutes =
       Number.isFinite(Number(shiftHours)) && Number(shiftHours) > 0
         ? Math.round(Number(shiftHours) * 60)
         : DEFAULT_SHIFT_HOURS * 60;
+
+    let peopleResult;
+    let resolvedBaseUrl;
+    let baseUrlError;
+    for (const candidate of baseUrlCandidates) {
+      try {
+        peopleResult = await tryEndpoints({
+          baseUrl: candidate,
+          authHeaders,
+          endpoints: ["/people", "/persons", "/users"],
+        });
+        resolvedBaseUrl = candidate;
+        baseUrlError = null;
+        break;
+      } catch (error) {
+        baseUrlError = error;
+      }
+    }
+
+    if (!peopleResult) {
+      const details = baseUrlError?.message || "Unknown error";
+      return res.status(502).json({
+        message:
+          "Unable to fetch people from Jibble. Check your base URL and API credentials.",
+        details,
+        triedBaseUrls: baseUrlCandidates,
+      });
+    }
 
     const peopleResult = await tryEndpoints({
       baseUrl: normalizedBaseUrl,
@@ -234,6 +325,8 @@ app.post("/api/report", async (req, res) => {
       let entryPayload;
       try {
         const timeResult = await tryEndpoints({
+          baseUrl: resolvedBaseUrl,
+          authHeaders,
           baseUrl: normalizedBaseUrl,
           authHeader,
           endpoints: ["/time_entries", "/timesheets", "/time-entries"],
@@ -255,6 +348,7 @@ app.post("/api/report", async (req, res) => {
 
     return res.json({
       date,
+      baseUrl: resolvedBaseUrl,
       baseUrl: normalizedBaseUrl,
       peopleCount: reports.length,
       reports,
